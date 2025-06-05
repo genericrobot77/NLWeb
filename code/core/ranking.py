@@ -21,8 +21,8 @@ logger = get_configured_logger("ranking_engine")
 
 class Ranking:
      
-    EARLY_SEND_THRESHOLD = 59
-    NUM_RESULTS_TO_SEND = 10
+    EARLY_SEND_THRESHOLD = 75
+    NUM_RESULTS_TO_SEND = 5
 
     FAST_TRACK = 1
     REGULAR_TRACK = 2
@@ -30,7 +30,7 @@ class Ranking:
     # This is the default ranking prompt, in case, for some reason, we can't find the site_type.xml file.
     RANKING_PROMPT = ["""  Assign a score between 0 and 100 to the following {site.itemType}
 based on how relevant it is to the user's question. Use your knowledge from other sources, about the item, to make a judgement. 
-If the score is above 50, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
+If the score is above 70, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
 Provide an explanation of the relevance of the item to the user's question, without mentioning the user's question or the score or explicitly mentioning the term relevance.
 If the score is below 75, in the description, include the reason why it is still relevant.
 The user's question is: {request.query}. The item's description is {item.description}""",

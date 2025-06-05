@@ -287,7 +287,7 @@ export class DropdownInterface {
    */
   getSites() {
     return [
-      'scifi_movies', 'verge', 'oreilly', 'eventbrite', 'all'
+      'Medicines', 'Healthdirect', 'Pregnancy-birth-and-baby', 'all'
     ];
   }
 
