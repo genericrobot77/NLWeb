@@ -287,7 +287,7 @@ export class DropdownInterface {
    */
   getSites() {
     return [
-      'Medicines', 'Healthdirect', 'Pregnancy-birth-and-baby', 'all'
+      'Medicines', 'Healthdirect', 'Pregnancy-Birth-and-Baby', 'all'
     ];
   }
 

@@ -151,9 +151,9 @@
       <promptString>
         Assign a score between 0 and 100 to the following item
         based on how relevant it is to the user's question. Use your knowledge from other sources, about the item, to make a judgement. 
-        If the score is above 70, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
+        If the score is above 50, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
         Provide an explanation of the relevance of the item to the user's question, without mentioning the user's question or the score or explicitly mentioning the term relevance.
-        If the score is below 75, in the description, DO NOT include this item in the results shown to user.
+        If the score is below 75, in the description, include the reason why it is still relevant.
         The user's question is: \"{request.query}\". The item's description in schema.org format is \"{item.description}\".
       </promptString>
       <returnStruc>
@@ -268,5 +268,21 @@
       </returnStruc>
     </Prompt>
   </RealEstate>
+
+  <Health>
+  <Prompt ref="AgeAndSmokingInfoPrompt">
+    <promptString>
+      Answering the user's query may depend on their age and smoking status.
+      Do you have this information from this query, the previous queries, the context, or memory about the user?
+      The user's query is: {request.query}. The previous queries are: {request.previousQueries}.
+    </promptString>
+    <returnStruc>
+      {
+        "age_and_smoking_info_found": "True or False",
+        "user_question": "Question to ask the user to clarify their age and whether they smoke"
+      }
+    </returnStruc>
+  </Prompt>
+</Health>
 
 </root>
