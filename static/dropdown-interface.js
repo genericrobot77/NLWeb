@@ -110,7 +110,7 @@ export class DropdownInterface {
       console.error('Error creating site dropdown:', error);
       // Clear loading option and add fallback sites
       siteSelect.innerHTML = '';
-      const fallbackSites = ['all', 'eventbrite', 'oreilly', 'scifi_movies', 'verge'];
+      const fallbackSites = ['all', 'Healthdirect', 'Medicines', 'Partner-Website', 'Pregnancy-Birth-and-Baby'];
       fallbackSites.forEach(site => {
         const option = document.createElement('option');
         option.value = escapeHtml(site);
@@ -342,12 +342,12 @@ export class DropdownInterface {
       } else {
         console.error('Unexpected response format from /sites endpoint:', data);
         // Fall back to default sites (alphabetized with 'all' first)
-        return ['all', 'eventbrite', 'oreilly', 'scifi_movies', 'verge'];
+        return ['all', 'Healthdirect', 'Medicines', 'Partner-Website', 'Pregnancy-Birth-and-Baby'];
       }
     } catch (error) {
       console.error('Error fetching sites:', error);
       // Fall back to default sites if the request fails (alphabetized with 'all' first)
-      return ['all', 'eventbrite', 'oreilly', 'scifi_movies', 'verge'];
+      return ['all', 'Healthdirect', 'Medicines', 'Partner-Website', 'Pregnancy-Birth-and-Baby'];
     }
   }
 

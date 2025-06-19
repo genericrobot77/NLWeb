@@ -116,7 +116,7 @@ class VectorDBClientInterface(ABC):
     
     @abstractmethod
     async def search(self, query: str, site: Union[str, List[str]], 
-                    num_results: int = 50, **kwargs) -> List[List[str]]:
+                    num_results: int = 25, **kwargs) -> List[List[str]]:
         """
         Search for documents matching the query and site.
         
@@ -146,7 +146,7 @@ class VectorDBClientInterface(ABC):
         pass
     
     @abstractmethod
-    async def search_all_sites(self, query: str, num_results: int = 50, **kwargs) -> List[List[str]]:
+    async def search_all_sites(self, query: str, num_results: int = 25, **kwargs) -> List[List[str]]:
         """
         Search across all sites.
         
@@ -330,7 +330,7 @@ class VectorDBClient:
                 raise
     
     async def search(self, query: str, site: Union[str, List[str]], 
-                    num_results: int = 50, endpoint_name: Optional[str] = None, **kwargs) -> List[List[str]]:
+                    num_results: int = 25, endpoint_name: Optional[str] = None, **kwargs) -> List[List[str]]:
         """
         Search for documents matching the query and site.
         
@@ -344,7 +344,7 @@ class VectorDBClient:
         Returns:
             List of search results
         """
-        print(f"Searching for '{query[:50]}...' in site: {site}, num_results: {num_results}")
+        print(f"Searching for '{query[:25]}...' in site: {site}, num_results: {num_results}")
         if (site == "all"):
             sites = CONFIG.nlweb.sites
             if (len(sites) == 0 or sites == "all"):
@@ -365,7 +365,7 @@ class VectorDBClient:
             site = site.replace(" ", "_")
 
         async with self._retrieval_lock:
-            logger.info(f"Searching for '{query[:50]}...' in site: {site}, num_results: {num_results}")
+            logger.info(f"Searching for '{query[:25]}...' in site: {site}, num_results: {num_results}")
             start_time = time.time()
             
             try:
@@ -394,7 +394,7 @@ class VectorDBClient:
                     {
                         "error_type": type(e).__name__,
                         "error_message": str(e),
-                        "query": query[:50] + "..." if len(query) > 50 else query,
+                        "query": query[:25] + "..." if len(query) > 25 else query,
                         "site": site,
                         "db_type": self.db_type,
                         "endpoint": self.endpoint_name
@@ -447,7 +447,7 @@ class VectorDBClient:
                 )
                 raise
     
-    async def search_all_sites(self, query: str, num_results: int = 50, 
+    async def search_all_sites(self, query: str, num_results: int = 25, 
                              endpoint_name: Optional[str] = None, **kwargs) -> List[List[str]]:
         """
         Search across all sites.
@@ -467,7 +467,7 @@ class VectorDBClient:
             return await temp_client.search_all_sites(query, num_results, **kwargs)
         
         async with self._retrieval_lock:
-            logger.info(f"Searching across all sites for '{query[:50]}...', num_results: {num_results}")
+            logger.info(f"Searching across all sites for '{query[:25]}...', num_results: {num_results}")
             start_time = time.time()
             
             try:
@@ -495,7 +495,7 @@ class VectorDBClient:
                     {
                         "error_type": type(e).__name__,
                         "error_message": str(e),
-                        "query": query[:50] + "..." if len(query) > 50 else query,
+                        "query": query[:25] + "..." if len(query) > 25 else query,
                         "db_type": self.db_type,
                         "endpoint": self.endpoint_name
                     }

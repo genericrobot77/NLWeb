@@ -16,3 +16,5 @@ RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
 
 # Set working directory
 WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y git
