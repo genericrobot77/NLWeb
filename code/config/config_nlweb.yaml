@@ -4,7 +4,7 @@
 # Comma-separated list of allowed sites, if you have multiple sites
 # in your store and want to restrict search to some sites. Defaults 
 # to all, for now.
-#sites: "yoursite"
+sites: "Healthdirect, Pregnancy-Birth-and-Baby, Partner-Website, Medicines"
 
 # Data folders for JSON files and embeddings
 data_folders:
@@ -17,7 +17,7 @@ tool_selection_enabled: false
 
 # Enable or disable memory functionality
 # When set to false, the system will not analyze queries for memory requests
-memory_enabled: true
+memory_enabled: false
 
 # Enable or disable query analysis
 # When set to false, the system will skip item type detection, multi-item type detection, and query type detection
@@ -25,11 +25,11 @@ analyze_query_enabled: true
 
 # Enable or disable decontextualization
 # When set to false, the system will not attempt to decontextualize queries based on previous context
-decontextualize_enabled: true
+decontextualize_enabled: false
 
 # Enable or disable required info checking
 # When set to false, the system will not check if required information is present before processing queries
-required_info_enabled: true
+required_info_enabled: false
 
 # Chatbot formatting instructions
 chatbot_instructions:

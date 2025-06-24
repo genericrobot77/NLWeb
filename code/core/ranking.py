@@ -15,6 +15,7 @@ import json
 from utils.trim import trim_json
 from prompts.prompts import find_prompt, fill_prompt
 from utils.logging_config_helper import get_configured_logger
+from core.drug_penalty import apply_drug_penalty
 
 logger = get_configured_logger("ranking_engine")
 
@@ -72,6 +73,12 @@ The user's question is: {request.query}. The item's description is {item.descrip
             return
         try:
             logger.debug(f"Ranking item: {name} from {site}")
+
+            #test
+            # Handle both string and dictionary inputs for json_str right at the top!
+            #schema_object = json_str if isinstance(json_str, dict) else json.loads(json_str)
+            #end test
+
             prompt_str, ans_struc = self.get_ranking_prompt()
             description = trim_json(json_str)
             prompt = fill_prompt(prompt_str, self.handler, {"item.description": description})
@@ -80,7 +87,19 @@ The user's question is: {request.query}. The item's description is {item.descrip
             ranking = await ask_llm(prompt, ans_struc, level="low", query_params=self.handler.query_params)
             logger.debug(f"Received ranking score: {ranking.get('score', 'N/A')} for item: {name}")
             
-            
+            #TEST
+            # Handle both string and dictionary inputs for json_str
+            #schema_object = json_str if isinstance(json_str, dict) else json.loads(json_str)
+
+            # Apply Drug penalty before storing score
+            #penalty = apply_drug_penalty(schema_object)
+            #original_score = int(ranking.get("score", 0))
+            #adjusted_score = max(original_score + penalty, 0)  # Don't allow negative scores
+            #ranking["score"] = adjusted_score
+
+            #logger.debug(f"Adjusted score after penalty: {adjusted_score} for item: {name}")
+            #End Test
+
             # Handle both string and dictionary inputs for json_str
             schema_object = json_str if isinstance(json_str, dict) else json.loads(json_str)
             
