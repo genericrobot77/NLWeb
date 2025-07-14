@@ -2308,7 +2308,7 @@ class ModernChatInterface {
       console.error('Error loading sites:', error);
       
       // Fallback sites
-      const fallbackSites = ['all', 'eventbrite', 'oreilly', 'scifi_movies', 'verge'];
+      const fallbackSites = ['all', 'Healthdirect', 'Pregnancy-Birth-and-Baby', 'Partner-Website'];
       this.sites = fallbackSites;
       this.selectedSite = 'all';
       

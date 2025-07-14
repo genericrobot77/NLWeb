@@ -50,6 +50,9 @@ class NLWebHandler:
 
         # the query that the user entered
         self.query = get_param(query_params, "query", str, "")
+                # Add this normaliser ↓
+        if isinstance(self.query, list):
+            self.query = self.query[0] if len(self.query) == 1 else " ".join(self.query)
 
         # the previous queries that the user has entered
         self.prev_queries = get_param(query_params, "prev", list, [])

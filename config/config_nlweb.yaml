@@ -13,7 +13,7 @@ data_folders:
 
 # Enable or disable tool selection
 # When set to false, queries will skip tool selection and go directly to search
-tool_selection_enabled: true
+tool_selection_enabled: false
 
 # Enable or disable memory functionality
 # When set to false, the system will not analyze queries for memory requests
@@ -29,7 +29,7 @@ decontextualize_enabled: true
 
 # Enable or disable required info checking
 # When set to false, the system will not check if required information is present before processing queries
-required_info_enabled: true
+required_info_enabled: false
 
 # Headers for HTTP requests
 headers:
