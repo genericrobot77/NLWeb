@@ -9,28 +9,6 @@ all_sites = recipe_sites + ["imdb", "npr podcasts", "neurips", "backcountry", "t
 def siteToItemType(site):
     # Get item type from configuration
     namespace = "http://nlweb.ai/base"
-<<<<<<< HEAD
-    if isinstance(site, list):
-        site = site[0]
-    et = "Item"
-    if site == "imdb":
-        et = "Movie"
-    elif site in recipe_sites:
-        et = "Recipe"
-    elif site == "npr podcasts":
-        et = "Thing"
-    elif site == "neurips":
-        et = "Paper"
-    elif site == "backcountry":
-        et = "Outdoor Gear"
-    elif site == "zillow":
-        et = "RealEstate"
-    elif site == "datacommons":
-        et = "Statistics"
-    else:
-        et = "Items"
-    return f"{{{namespace}}}{et}"
-=======
     
     # Try to get from configuration
     try:
@@ -43,7 +21,6 @@ def siteToItemType(site):
     
     # Default to Item if not found in configuration
     return f"{{{namespace}}}Item"
->>>>>>> 6961914 (Remove old_code and old_static)
     
 
 def itemTypeToSite(item_type):
