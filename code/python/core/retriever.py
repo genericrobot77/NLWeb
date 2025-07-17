@@ -13,6 +13,7 @@ import sys
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Union, Tuple, Type
 import json
+from core.utils.dedupe_by_stub import dedupe_by_stub
 
 from core.config import CONFIG
 from core.utils.utils import get_param
@@ -876,7 +877,10 @@ class VectorDBClient:
         """
         # Just call search with "all" as the site parameter
         # The individual clients will handle "all" appropriately
-        return await self.search(query, "all", num_results, endpoint_name, **kwargs)
+        #return await self.search(query, "all", num_results, endpoint_name, **kwargs)
+        raw_results = await self.search(query, "all", num_results, endpoint_name, **kwargs)
+        deduped = dedupe_by_stub(raw_results)
+        return deduped[:num_results]
     
     async def get_sites(self, endpoint_name: Optional[str] = None, **kwargs) -> List[str]:
         """
