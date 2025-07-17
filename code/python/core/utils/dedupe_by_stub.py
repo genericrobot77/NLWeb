@@ -9,7 +9,7 @@ _priority_map: Dict[str, int] = {
     # add more domains here in priority order…
 }
 
-def _dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
+def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
     """
     Collapse rows by URL‐path stub, keeping the row whose domain has
     the lowest index in _priority_map (i.e. highest priority).
