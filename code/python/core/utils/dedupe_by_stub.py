@@ -31,7 +31,10 @@ def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
         p = urlparse(url)
         
         # Normalize the path by stripping any trailing slash
-        stub = p.path.rstrip("/")
+        #stub = p.path.rstrip("/")
+        path = p.path.rstrip("/")
+        segments = [seg for seg in path.split("/") if seg]
+        stub = segments[-1] if segments else "/"
         
         # Look up this domain’s priority, defaulting to lowest if unknown
         priority = _priority_map.get(p.netloc, len(_priority_map))
