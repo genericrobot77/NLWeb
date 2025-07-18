@@ -80,10 +80,13 @@
     <Prompt ref="DetectMemoryRequestPrompt">
       <promptString>
         Analyze the following statement from the user. 
-        Is the user asking you to remember, that may be relevant to not just this query, but also future queries? 
-        If so, what is the user asking us to remember?
-        The user should be explicitly asking you to remember something for future queries, 
-        not just expressing a requirement for the current query.
+        If the user mentions specific details about them selves such as:
+        -  "I am 65 years old and have diabetes" remember that"
+        - "I have HIV"
+        - "I have high blood pressure"
+        Is what the user telling you relevant to not just this query, but also future queries? 
+        If so, what would it be useful to remember?
+        The user does not need to be explicitly asking you to remember something for future queries.
         Keep the memory_request field short and do not reference the user or site.
         The user's query is: {request.rawQuery}.
       </promptString>
@@ -115,14 +118,14 @@
         What is the kind of item the query is likely seeking with this query: {request.query}
         
         Common item types include:
-        - Recipe (for cooking, food preparation)
-        - Movie (for films, cinema)
-        - Product (for items to purchase)
-        - Restaurant (for dining establishments)
-        - Statistics (for demographic data, population statistics, economic indicators about places like counties, cities, states)
+        - Organization (Health services)
+        - WebPage (Health articles)
+        - FAQPage (Question and Answer)
+        - Question (specific question)
+        - Answer (when an answer is neatly available)
+        - Drug (Medicines)
         - Item (for general items that don't fit other categories)
         
-        If the query is asking about statistical data like population, median income, demographics, or economic indicators for geographic locations, return "Statistics".
       </promptString>
       <returnStruc>
         {
@@ -170,9 +173,9 @@
       <promptString>
         Assign a score between 0 and 100 to the following item
         based on how relevant it is to the user's question. Use your knowledge from other sources, about the item, to make a judgement. 
-        If the score is above 50, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
+        If the score is above 70, provide a short description of the item highlighting the relevance to the user's question, without mentioning the user's question.
         Provide an explanation of the relevance of the item to the user's question, without mentioning the user's question or the score or explicitly mentioning the term relevance.
-        If the score is below 75, in the description, include the reason why it is still relevant.
+        If the score is below 70, in the description, include the reason why it is still relevant.
         The user's question is: \"{request.query}\". The item's description in schema.org format is \"{item.description}\".
       </promptString>
       <returnStruc>

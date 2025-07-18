@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 # Map each domain (netloc) to an integer priority.
 # Lower numbers = higher priority. Unknown domains default to lowest priority.
 _priority_map: Dict[str, int] = {
-    "www.healthdirect.gov.au":      0,  # highest priority
+    "www.healthdirect.gov.au": 0,  # highest priority
     "www.pregnancybirthbaby.org.au": 1,
     # add more domains here in priority order…
 }

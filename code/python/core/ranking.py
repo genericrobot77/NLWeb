@@ -21,7 +21,7 @@ logger = get_configured_logger("ranking_engine")
 
 class Ranking:
      
-    EARLY_SEND_THRESHOLD = 59
+    EARLY_SEND_THRESHOLD = 80
     NUM_RESULTS_TO_SEND = 10
 
     FAST_TRACK = 1
