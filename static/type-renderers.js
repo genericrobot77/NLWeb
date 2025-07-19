@@ -150,6 +150,8 @@ export class TypeRendererFactory {
   static registerAll(jsonRenderer) {
     TypeRendererFactory.registerRenderer(RealEstateRenderer, jsonRenderer);
     TypeRendererFactory.registerRenderer(PodcastEpisodeRenderer, jsonRenderer);
+    TypeRendererFactory.registerRenderer(MedicalOrganizationRenderer, jsonRenderer);
+
     // RecipeRenderer will be registered separately
     // Add more renderers here as needed
   }
@@ -168,3 +170,63 @@ export class TypeRendererFactory {
     });
   }
 }
+
+export class MedicalOrganizationRenderer extends TypeRenderer {
+  static get supportedTypes() {
+    return ['MedicalOrganization'];
+  }
+
+  render(item) {
+    // Single‐service: fall back to default (which already includes description)
+    if (!Array.isArray(item.specialties) || item.specialties.length <= 1) {
+      return this.jsonRenderer.createDefaultItemHtml(item);
+    }
+
+    // Multi‐service: custom card
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+
+    // 1) Title
+    let html = `
+      <a href="${item.detailUrl}" class="result-title">
+        ${item.name}
+      </a>
+    `;
+
+    // 2) LLM‐generated description (if present)
+    if (item.description) {
+      html += `
+        <p class="result-description">
+          ${item.description}
+        </p>
+      `;
+    }
+
+    // 3) Address (optional)
+    if (item.location?.address) {
+      html += `
+        <p class="result-description">
+          ${item.location.address.streetAddress}, ${item.location.address.addressLocality}
+        </p>
+      `;
+    }
+
+    // 4) One paragraph per service
+    item.specialties.forEach(svc => {
+      html += `
+        <p class="result-description">
+          <a href="${svc.url}" class="result-title">${svc.name}</a>
+        </p>
+      `;
+    });
+
+    el.innerHTML = html;
+    return el;
+  }
+}
+
+
+
+
+
+

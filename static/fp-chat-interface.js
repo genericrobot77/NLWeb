@@ -780,31 +780,81 @@ class ModernChatInterface {
   }
   
   renderItems(items) {
-    if (!items || items.length === 0) return '';
-    
-    // Sort items by score in descending order
-    const sortedItems = [...items].sort((a, b) => {
-      const scoreA = a.score || 0;
-      const scoreB = b.score || 0;
-      return scoreB - scoreA;
+  console.log('🔍 renderItems called, incoming items:', items);
+  if (!items || items.length === 0) return '';
+
+  try {
+    // 1) Group MedicalOrganizations by stripping off /service-slug/UUID
+    const orgMap = new Map();
+    const others = [];
+
+    items.forEach(item => {
+      const schemaType = item.schema_object?.['@type'];
+      const isOrg = Array.isArray(schemaType)
+        ? schemaType.includes('MedicalOrganization')
+        : schemaType === 'MedicalOrganization';
+
+      if (isOrg) {
+        const baseUrl = item.url.replace(/\/[^\/]+\/[^\/]+$/, '');
+        if (!orgMap.has(baseUrl)) {
+          orgMap.set(baseUrl, {
+            ...item,
+            url: baseUrl,
+            detailUrl: item.url,
+            specialties: []
+          });
+        }
+
+        // figure out the service name
+        let svc = '';
+        if (item.medicalSpecialty) {
+          svc = item.medicalSpecialty.name || item.medicalSpecialty;
+        } else {
+          const m = item.url.match(/\/([^\/]+)\/[^\/]+$/);
+          svc = m ? m[1].replace(/-/g, ' ') : '';
+        }
+
+        const entry = orgMap.get(baseUrl);
+        if (svc && !entry.specialties.find(s => s.url === item.url)) {
+          entry.specialties.push({ name: svc, url: item.url });
+        }
+      } else {
+        others.push(item);
+      }
     });
-    
-    // Create a container for all results
+
+    // 2) Only override URL for single-service orgs
+    const adjustedOrgs = Array.from(orgMap.values()).map(entry => {
+      if (Array.isArray(entry.specialties) && entry.specialties.length === 1) {
+        entry.url = entry.detailUrl || entry.specialties[0].url;
+      }
+      return entry;
+    });
+
+    // 3) Merge back, sort by score
+    const aggregated = [...adjustedOrgs, ...others];
+    const sortedItems = aggregated.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    console.log('🔍 renderItems: sortedItems', sortedItems);
+
+    // 4) Render
     const resultsContainer = document.createElement('div');
     resultsContainer.className = 'search-results';
-    
     sortedItems.forEach(item => {
-      // Use JsonRenderer to create the item HTML
-      const itemElement = this.jsonRenderer.createJsonItemHtml(item);
-      
-      // No inline styles - let CSS handle all styling
-      
-      resultsContainer.appendChild(itemElement);
+      const el = this.jsonRenderer.createJsonItemHtml(item);
+      resultsContainer.appendChild(el);
     });
-    
-    // Return the outer HTML of the container
+
     return resultsContainer.outerHTML;
+  } catch (err) {
+    console.error('❌ renderItems error:', err);
+    return '';
   }
+}
+
+
+
+
   
   renderEnsembleResult(result) {
     const recommendations = result.recommendations;

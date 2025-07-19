@@ -12,7 +12,7 @@ from core.config import CONFIG
 from core.utils.trim_schema_json import trim_schema_json
 
 # Item type categorization
-SKIP_TYPES = []
+SKIP_TYPES = ["Place"]
 
 INCLUDE_TYPES = []
 
