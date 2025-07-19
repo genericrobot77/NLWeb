@@ -5,7 +5,7 @@ import chardet
 # for indexing or ranking. Further, many pages are just collections that we don't 
 # want to index at all. We can also skip things like Breadcrumbs
 
-skip_types = ["Place"]
+skip_types = []
 
 skip_properties = []
 

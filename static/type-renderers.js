@@ -171,62 +171,46 @@ export class TypeRendererFactory {
   }
 }
 
+// MedicalOrganizationRenderer.js
 export class MedicalOrganizationRenderer extends TypeRenderer {
   static get supportedTypes() {
     return ['MedicalOrganization'];
   }
 
   render(item) {
-    // Single‐service: fall back to default (which already includes description)
+    // 1 – single service → normal card
     if (!Array.isArray(item.specialties) || item.specialties.length <= 1) {
       return this.jsonRenderer.createDefaultItemHtml(item);
     }
 
-    // Multi‐service: custom card
-    const el = document.createElement('div');
-    el.className = 'search-result-item';
+    // 2 – multi-service → start with the normal card
+    const el = this.jsonRenderer.createDefaultItemHtml(item);   // has .item-container
+    el.classList.add('item-medical-org'); 
+    // if the item has no usable image, drop the placeholder
+    if (!item.schema_object?.image && !item.schema_object?.thumbnailUrl) {
+      const img = el.querySelector('.item-image');
+      if (img) img.remove();
+    }                                                        // custom marker
 
-    // 1) Title
-    let html = `
-      <a href="${item.detailUrl}" class="result-title">
-        ${item.name}
-      </a>
-    `;
+    const content = el.querySelector('.item-content');          // where we inject pills
+    if (!content) return el;                                    // safety
 
-    // 2) LLM‐generated description (if present)
-    if (item.description) {
-      html += `
-        <p class="result-description">
-          ${item.description}
-        </p>
-      `;
-    }
+    /* ---- build the service pills ---- */
+    const pillBar = document.createElement('div');              // keeps pills together
+    pillBar.style.marginTop = '6px';
 
-    // 3) Address (optional)
-    if (item.location?.address) {
-      html += `
-        <p class="result-description">
-          ${item.location.address.streetAddress}, ${item.location.address.addressLocality}
-        </p>
-      `;
-    }
-
-    // 4) One paragraph per service
     item.specialties.forEach(svc => {
-      html += `
-        <p class="result-description">
-          <a href="${svc.url}" class="result-title">${svc.name}</a>
-        </p>
+      const pill = document.createElement('span');
+      pill.className = 'item-details-text';
+      pill.innerHTML = `
+        <a href="${svc.url}" class="item-title-link">${svc.name}</a>
       `;
+      pillBar.appendChild(pill);
     });
 
-    el.innerHTML = html;
+    content.appendChild(pillBar);
     return el;
   }
 }
-
-
-
-
 
 

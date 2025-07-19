@@ -781,31 +781,33 @@ class ModernChatInterface {
   
   renderItems(items) {
   console.log('🔍 renderItems called, incoming items:', items);
-  if (!items || items.length === 0) return '';
+
+  if (!items || items.length === 0) {
+    console.log('🔍 renderItems: no items—returning empty string');
+    return '';
+  }
 
   try {
-    // 1) Group MedicalOrganizations by stripping off /service-slug/UUID
+    // A) Group only true MedicalOrganization entries by stripping service-slug + UUID
     const orgMap = new Map();
     const others = [];
 
     items.forEach(item => {
+      // Detect type via the JSON-LD schema_object
       const schemaType = item.schema_object?.['@type'];
       const isOrg = Array.isArray(schemaType)
         ? schemaType.includes('MedicalOrganization')
         : schemaType === 'MedicalOrganization';
 
       if (isOrg) {
+        // Remove the last two URL segments (service slug + UUID)
         const baseUrl = item.url.replace(/\/[^\/]+\/[^\/]+$/, '');
+
         if (!orgMap.has(baseUrl)) {
-          orgMap.set(baseUrl, {
-            ...item,
-            url: baseUrl,
-            detailUrl: item.url,
-            specialties: []
-          });
+          orgMap.set(baseUrl, { ...item, url: baseUrl, specialties: [] });
         }
 
-        // figure out the service name
+        // Derive the service name from the URL if not in schema
         let svc = '';
         if (item.medicalSpecialty) {
           svc = item.medicalSpecialty.name || item.medicalSpecialty;
@@ -815,29 +817,22 @@ class ModernChatInterface {
         }
 
         const entry = orgMap.get(baseUrl);
-        if (svc && !entry.specialties.find(s => s.url === item.url)) {
+        if (svc && !entry.specialties.includes(svc)) {
           entry.specialties.push({ name: svc, url: item.url });
         }
+
       } else {
         others.push(item);
       }
     });
 
-    // 2) Only override URL for single-service orgs
-    const adjustedOrgs = Array.from(orgMap.values()).map(entry => {
-      if (Array.isArray(entry.specialties) && entry.specialties.length === 1) {
-        entry.url = entry.detailUrl || entry.specialties[0].url;
-      }
-      return entry;
-    });
-
-    // 3) Merge back, sort by score
-    const aggregated = [...adjustedOrgs, ...others];
+    // B) Merge back into one list (orgs first), then sort by score
+    const aggregated = [...orgMap.values(), ...others];
     const sortedItems = aggregated.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    console.log('🔍 renderItems: sortedItems', sortedItems);
+    console.log('🔍 renderItems: aggregated list:', aggregated);
 
-    // 4) Render
+    // C) Render into a container
     const resultsContainer = document.createElement('div');
     resultsContainer.className = 'search-results';
     sortedItems.forEach(item => {
@@ -845,14 +840,15 @@ class ModernChatInterface {
       resultsContainer.appendChild(el);
     });
 
-    return resultsContainer.outerHTML;
+    const html = resultsContainer.outerHTML;
+    console.log('🔍 renderItems returning HTML (length):', html.length);
+    return html;
+
   } catch (err) {
     console.error('❌ renderItems error:', err);
     return '';
   }
 }
-
-
 
 
   

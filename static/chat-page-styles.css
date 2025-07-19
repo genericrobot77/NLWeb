@@ -627,3 +627,21 @@ body {
     padding: 16px;
   }
 }
+/* ── compact “service” pills for multi-service MedicalOrganizations ───────── */
+.item-medical-org .item-details-text {
+  display:inline-block;
+  margin:2px 6px 2px 0;
+  padding:4px 8px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:4px;
+}
+
+.item-medical-org .item-details-text .item-title-link{
+  display:inline;           /* override the global block rule */
+  font-size:14px;
+  line-height:1.3;
+}
+
+
+

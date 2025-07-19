@@ -544,3 +544,35 @@ body {
     padding-left: 60px;
   }
 }
+
+/* ── Multi-service MedicalOrganization pills ───────────── */
+.item-medical-org .item-details-text {
+  display: inline-block;       /* side-by-side, natural width  */
+  background: var(--bg-secondary);
+  padding: 4px 8px;            /* compact pill */
+  margin: 2px 6px 2px 0;       /* small gap between pills      */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+/* remove extra gap above/below the description inside these cards */
+.item-medical-org .item-description {
+  margin: 8px 0 6px;
+}
+
+/* compact “service” pills inside a multi-service card */
+.item-medical-org .item-details-text{
+  display:inline-block;           /* sit side-by-side */
+  margin:2px 6px 2px 0;
+  padding:4px 8px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:4px;
+}
+
+/* the link inside a pill should not be block-level */
+.item-medical-org .item-details-text .item-title-link{
+  display:inline;
+  font-size:14px;
+  line-height:1.3;
+}
