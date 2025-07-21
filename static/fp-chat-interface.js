@@ -804,8 +804,10 @@ class ModernChatInterface {
         const baseUrl = item.url.replace(/\/[^\/]+\/[^\/]+$/, '');
 
         if (!orgMap.has(baseUrl)) {
-          orgMap.set(baseUrl, { ...item, url: baseUrl, specialties: [] });
+          // Keep the first full URL for the merged item (don’t use stub)
+          orgMap.set(baseUrl, { ...item, specialties: [] });
         }
+
 
         // Derive the service name from the URL if not in schema
         let svc = '';
