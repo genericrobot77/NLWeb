@@ -780,77 +780,70 @@ class ModernChatInterface {
   }
   
   renderItems(items) {
-  console.log('🔍 renderItems called, incoming items:', items);
+    console.log('🔍 renderItems called, incoming items:', items);
 
-  if (!items || items.length === 0) {
-    console.log('🔍 renderItems: no items—returning empty string');
-    return '';
-  }
+    if (!items || items.length === 0) {
+      console.log('🔍 renderItems: no items—returning empty string');
+      return '';
+    }
 
-  try {
-    // A) Group only true MedicalOrganization entries by stripping service-slug + UUID
-    const orgMap = new Map();
-    const others = [];
+    try {
+      // Group by org stub (drop specialty + UUID from URL)
+      const orgMap = new Map();
 
-    items.forEach(item => {
-      // Detect type via the JSON-LD schema_object
-      const schemaType = item.schema_object?.['@type'];
-      const isOrg = Array.isArray(schemaType)
-        ? schemaType.includes('MedicalOrganization')
-        : schemaType === 'MedicalOrganization';
-
-      if (isOrg) {
-        // Remove the last two URL segments (service slug + UUID)
-        const baseUrl = item.url.replace(/\/[^\/]+\/[^\/]+$/, '');
+      items.forEach(item => {
+        const baseUrl = item.url.replace(/\/[^\/]+\/[0-9a-fA-F-]{8,}$/i, '');
 
         if (!orgMap.has(baseUrl)) {
-          // Keep the first full URL for the merged item (don’t use stub)
-          orgMap.set(baseUrl, { ...item, specialties: [] });
-        }
-
-
-        // Derive the service name from the URL if not in schema
-        let svc = '';
-        if (item.medicalSpecialty) {
-          svc = item.medicalSpecialty.name || item.medicalSpecialty;
+          orgMap.set(baseUrl, {
+            ...item,
+            specialties: item.specialties ? [...item.specialties] : []
+          });
         } else {
-          const m = item.url.match(/\/([^\/]+)\/[^\/]+$/);
-          svc = m ? m[1].replace(/-/g, ' ') : '';
+          const existing = orgMap.get(baseUrl);
+
+          // Merge specialties
+          if (item.specialties) {
+            item.specialties.forEach(svc => {
+              const alreadyExists = existing.specialties.some(e =>
+                e.name === svc.name && e.url === svc.url
+              );
+              if (!alreadyExists) {
+                existing.specialties.push(svc);
+              }
+            });
+          }
+
+          // Prefer higher score for description & URL
+          if ((item.score || 0) > (existing.score || 0)) {
+            existing.description = item.description;
+            existing.url = item.url;
+            existing.score = item.score;
+          }
         }
+      });
 
-        const entry = orgMap.get(baseUrl);
-        if (svc && !entry.specialties.includes(svc)) {
-          entry.specialties.push({ name: svc, url: item.url });
-        }
+      // Sort merged items
+      const sortedItems = [...orgMap.values()].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-      } else {
-        others.push(item);
-      }
-    });
+      console.log('🔍 renderItems: aggregated list:', sortedItems);
 
-    // B) Merge back into one list (orgs first), then sort by score
-    const aggregated = [...orgMap.values(), ...others];
-    const sortedItems = aggregated.sort((a, b) => (b.score || 0) - (a.score || 0));
+      // Render into container
+      const container = document.createElement('div');
+      container.className = 'search-results';
+      sortedItems.forEach(item => {
+        const el = this.jsonRenderer.createJsonItemHtml(item);
+        container.appendChild(el);
+      });
 
-    console.log('🔍 renderItems: aggregated list:', aggregated);
+      return container.outerHTML;
 
-    // C) Render into a container
-    const resultsContainer = document.createElement('div');
-    resultsContainer.className = 'search-results';
-    sortedItems.forEach(item => {
-      const el = this.jsonRenderer.createJsonItemHtml(item);
-      resultsContainer.appendChild(el);
-    });
-
-    const html = resultsContainer.outerHTML;
-    console.log('🔍 renderItems returning HTML (length):', html.length);
-    return html;
-
-  } catch (err) {
-    console.error('❌ renderItems error:', err);
-    return '';
+    } catch (err) {
+      console.error('❌ renderItems error:', err);
+      return '';
+    }
   }
-}
+
 
 
   

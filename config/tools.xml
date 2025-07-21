@@ -524,4 +524,42 @@
     
   </Statistics>
 
+  <MedicalOrganization>
+    <Tool name="search" enabled="true">
+      <method>builtin</method>
+      <param name="suburb"   type="string" required="false"/>
+      <param name="postcode" type="string" required="false"/>
+      <prompt>
+      The user has asked: "{request.query}".
+      If they are looking for a doctor, chemist, pharmacy, clinic, or other medical service in their area,
+      score this tool HIGH (80–100). Otherwise score it LOW (0–30).
+      </prompt>
+      <returnStruc>
+        {
+          "score": "integer between 0 and 100",
+          "search_query": "{request.query}"
+        }
+      </returnStruc>
+    </Tool>
+
+    <Tool name="details" enabled="true">
+      <method>code</method>
+      <handler>methods.item_details.ItemDetailsHandler</handler>
+      <param name="suburb"   type="string" required="false"/>
+      <param name="postcode" type="string" required="false"/>
+      <prompt>
+    The user has asked: "{request.query}".
+    If they are looking for a doctor, chemist, pharmacy, clinic, or other medical service in their area,
+    score this tool HIGH (80–100). Otherwise score it LOW (0–30).
+  </prompt>
+  <returnStruc>
+    {
+      "score": "integer between 0 and 100",
+      "search_query": "{request.query}"
+    }
+  </returnStruc>
+    </Tool>
+  </MedicalOrganization>
+
+
 </Tools>

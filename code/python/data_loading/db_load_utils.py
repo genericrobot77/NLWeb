@@ -21,6 +21,34 @@ EMBEDDINGS_PATH_SMALL = "./data/embeddings/small/"
 EMBEDDINGS_PATH_LARGE = "./data/embeddings/large/"
 EMBEDDING_SIZE = "small"
 
+
+#-- TEST MERGE GRAPH ------
+def merge_graph_nodes(graph):
+    """
+    Merge nodes in @graph that share the same @id or url.
+    Later nodes win on key conflicts, lists are concatenated uniquely.
+    """
+    merged = {}
+    for node in graph:
+        node_id = node.get('@id') or node.get('url')
+        if not node_id:
+            continue
+        if node_id not in merged:
+            merged[node_id] = node
+        else:
+            for k, v in node.items():
+                if k not in merged[node_id]:
+                    merged[node_id][k] = v
+                elif isinstance(v, list) and isinstance(merged[node_id][k], list):
+                    merged[node_id][k] += [x for x in v if x not in merged[node_id][k]]
+                elif isinstance(v, dict) and isinstance(merged[node_id][k], dict):
+                    merged[node_id][k].update(v)
+                else:
+                    merged[node_id][k] = v
+    return list(merged.values())
+
+# -- END TEST ---
+
 # ---------- File and JSON Processing Functions ----------
 
 async def read_file_lines(file_path: str) -> List[str]:
@@ -85,29 +113,29 @@ def should_include_item(js):
 
 def normalize_item_list(js):
     """
-    Normalize a JSON item list into a consistent format.
-    
-    Args:
-        js: JSON object or list to normalize
-        
-    Returns:
-        Normalized list of items
+    Normalize a JSON item list into a flat list of items.
+    If @graph is present, merge nodes with duplicate @id or url.
     """
-    retval = []
+    items = []
+
     if isinstance(js, list):
+        # Flatten any nested lists and merge their graphs
         for item in js:
             if isinstance(item, list) and len(item) == 1:
                 item = item[0]
             if "@graph" in item:
-                for subitem in item["@graph"]:
-                    retval.append(subitem)
+                items.extend(merge_graph_nodes(item["@graph"]))
             else:
-                retval.append(item)
-        return retval
+                items.append(item)
+
     elif "@graph" in js:
-        return js["@graph"]
+        items.extend(merge_graph_nodes(js["@graph"]))
+
     else:
-        return [js]
+        items.append(js)
+
+    return items
+
 
 def get_item_name(item: Dict[str, Any]) -> str:
     """
@@ -128,9 +156,9 @@ def get_item_name(item: Dict[str, Any]) -> str:
     name_fields = ["name", "headline", "title", "keywords"]
     
     for field in name_fields:
-        if field in item and item[field]:
+        if field in item and item[field] and not str(item[field]).startswith('http'):
             return item[field]
-    
+        
     # Try to extract from URL if name fields aren't present
     url = None
     if "url" in item:
@@ -149,55 +177,85 @@ def get_item_name(item: Dict[str, Any]) -> str:
 
 def prepare_documents_from_json(url: str, json_data: str, site: str) -> Tuple[List[Dict[str, Any]], List[str]]:
     """
-    Prepare documents from URL and JSON data.
-    
-    Args:
-        url: URL for the item
-        json_data: JSON data for the item
-        site: Site identifier
-        
-    Returns:
-        Tuple of (documents, texts_for_embedding)
+    Prepare one merged document per outer URL.
+    Collect all specialties and attach them as a 'specialties' array.
     """
     try:
-        # Parse and trim the JSON
         json_obj = json.loads(json_data)
         trimmed_json = trim_schema_json(json_obj, site)
-        
         if not trimmed_json:
             return [], []
-        
-        # Convert to list if not already
-        if not isinstance(trimmed_json, list):
-            trimmed_json = [trimmed_json]
-        
-        documents = []
-        texts = []
-        
-        # Process each item in the JSON
-        for i, item in enumerate(trimmed_json):
-            if item is None:
-                continue
-                
-            item_url = url if i == 0 else f"{url}#{i}"
-            item_json = json.dumps(item)
-            
-            # Add document to batch
-            doc = {
-                "id": str(int64_hash(item_url)),
-                "schema_json": item_json,
-                "url": item_url,
-                "name": get_item_name(item),
-                "site": site
-            }
-            
-            documents.append(doc)
-            texts.append(item_json)
-        
-        return documents, texts
+
+        # Start with empty merged_doc
+        merged_doc = {}
+        specialties = []
+
+        # If trimmed_json is a list of nodes
+        if isinstance(trimmed_json, list):
+            for node in trimmed_json:
+                # Add specialty info for pills
+                specialty = node.get("medicalSpecialty")
+                node_url = node.get("url") or node.get("@id")
+                if specialty and node_url:
+                    # Handle both single and list of specialties
+                    specialty_names = []
+                    if isinstance(specialty, list):
+                        specialty_names = [
+                            s.get("name") if isinstance(s, dict) else str(s)
+                            for s in specialty
+                        ]
+                    else:
+                        specialty_names = [specialty.get("name") if isinstance(specialty, dict) else str(specialty)]
+                    for name in specialty_names:
+                        if name and {"name": name, "url": node_url} not in specialties:
+                            specialties.append({"name": name, "url": node_url})
+
+                # Merge all node fields into merged_doc
+                for k, v in node.items():
+                    if k not in merged_doc:
+                        merged_doc[k] = v
+                    elif isinstance(v, list) and isinstance(merged_doc[k], list):
+                        merged_doc[k] += [x for x in v if x not in merged_doc[k]]
+                    elif isinstance(v, dict) and isinstance(merged_doc[k], dict):
+                        merged_doc[k].update(v)
+                    else:
+                        merged_doc[k] = v
+
+        else:
+            merged_doc = trimmed_json
+
+        # Attach specialties array
+        if specialties:
+            merged_doc["specialties"] = specialties
+
+        # Fallbacks for URL and name
+        item_url = merged_doc.get('@id') or merged_doc.get('url') or url
+        if not item_url:
+            print("WARNING: No URL found for merged document")
+            return [], []
+
+        item_name = get_item_name(merged_doc)
+        if not item_name:
+            print("WARNING: No name found for merged document")
+            item_name = "Unnamed Item"
+
+        item_json = json.dumps(merged_doc)
+
+        doc = {
+            "id": str(int64_hash(item_url)),
+            "schema_json": item_json,
+            "url": item_url,
+            "name": item_name,
+            "site": site
+        }
+
+        return [doc], [item_json]
+
     except Exception as e:
         print(f"Error preparing documents from JSON: {str(e)}")
         return [], []
+
+
 
 def documents_from_csv_line(line, site):
     """
