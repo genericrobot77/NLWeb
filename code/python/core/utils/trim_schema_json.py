@@ -35,6 +35,26 @@ def should_skip_item(site, item):
 # 6. If the propery is review and the value is a list, go through each item in the list
 # and pick the reviewBody of upto 3 reviews, with the longest reviews
 
+def _format_opening_hours(spec):
+    """
+    Turn openingHoursSpecification dict/list into human-readable text.
+    """
+    entries = spec if isinstance(spec, list) else [spec]
+    parts = []
+    for e in entries:
+        days = e.get("dayOfWeek")
+        opens = e.get("opens")
+        closes = e.get("closes")
+        # Normalize days to string
+        if isinstance(days, list):
+            day_str = ", ".join(days)
+        else:
+            day_str = days or ""
+        if opens and closes:
+            parts.append(f"{day_str}: {opens}–{closes}")
+    return "; ".join(parts)
+
+
 def trim_schema_json_list(schema_json, site):
     trimmed_items = []
     for item in schema_json:
@@ -60,6 +80,11 @@ def trim_schema_json(schema_json, site):
             return None
         else:
             retval = {}
+
+            # ←─── HERE: carry the raw openingHoursSpecification through ────→
+        if "openingHoursSpecification" in schema_json:
+
+            retval["openingHoursSpecification"] = schema_json["openingHoursSpecification"]
             # Rule 1: Skip properties in skip_properties
             for k, v in schema_json.items():
                 if k in skip_properties:
@@ -101,6 +126,13 @@ def trim_schema_json(schema_json, site):
                 
                 # Default: keep the property as is
                 retval[k] = v
+
+            # --- flatten it into text for the LLM/UI ---
+            raw_oh = retval.get("openingHoursSpecification")
+            if raw_oh:
+                text = _format_opening_hours(raw_oh)
+                if text:
+                    retval["openingHoursText"] = text    
             
             # Return early since we've already processed all items
             return retval
