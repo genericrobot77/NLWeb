@@ -570,9 +570,20 @@ body {
   border-radius:4px;
 }
 
-/* the link inside a pill should not be block-level */
-.item-medical-org .item-details-text .item-title-link{
-  display:inline;
-  font-size:14px;
-  line-height:1.3;
+.specialty-pill {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  background: #e0f7fa;
+  border-radius: 4px;
+  font-size: .85em;
+  color: #006064;
+}
+
+.medical-specialty-container {
+  margin-top: 8px;
+}
+
+.specialty-pill:not(:last-child) {
+  margin-right: 6px;
 }

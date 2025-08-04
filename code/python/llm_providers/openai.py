@@ -96,7 +96,7 @@ class OpenAIProvider(LLMProvider):
         prompt: str,
         schema: Dict[str, Any],
         model: Optional[str] = None,
-        temperature: float = 0.2,
+        temperature: float = 0.7,
         max_tokens: int = 2048,
         timeout: float = 30.0,
         **kwargs

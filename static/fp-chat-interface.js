@@ -832,7 +832,8 @@ class ModernChatInterface {
       const container = document.createElement('div');
       container.className = 'search-results';
       sortedItems.forEach(item => {
-        const el = this.jsonRenderer.createJsonItemHtml(item);
+        // after—this will pick up your MedicalOrganizationRenderer
+        const el = this.jsonRenderer.createDefaultItemHtml(item);
         container.appendChild(el);
       });
 

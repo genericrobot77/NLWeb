@@ -547,3 +547,12 @@
         z-index: -1;
     }
 }
+.specialty-pill{
+  display:inline-block;
+  margin-top:6px;
+  padding:2px 8px;
+  background:#e0f7fa;
+  border-radius:4px;
+  font-size:.85em;
+  color:#006064;
+}
