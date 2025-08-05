@@ -1,56 +1,52 @@
-from typing import List, Dict
-from urllib.parse import urlparse
+from typing import List, Dict, Tuple
+from urllib.parse import urlparse, unquote
+import os
+import logging
 
-# Map each domain (netloc) to an integer priority.
-# Lower numbers = higher priority. Unknown domains default to lowest priority.
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Map each domain to its priority (lower = higher priority)
 _priority_map: Dict[str, int] = {
-    "www.healthdirect.gov.au": 0,  # highest priority
+    "www.healthdirect.gov.au":       0,
+    "healthdirect.gov.au":           0,
     "www.pregnancybirthbaby.org.au": 1,
-    # add more domains here in priority order…
+    "pregnancybirthbaby.org.au":     1,
+    # …add others here
 }
 
 def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
     """
     Collapse rows by URL‐path stub, keeping the row whose domain has
-    the lowest index in _priority_map (i.e. highest priority).
-    
-    Args:
-        rows: List of rows, each row is a List[str] where the first element
-              is expected to be a URL.
-    
-    Returns:
-        A filtered list of rows, one per unique URL stub. If multiple rows
-        share the same path stub, the row from the domain with the higher
-        priority (lower index) is kept.
+    the lowest index in _priority_map.
     """
-    # Will hold the winning row for each stub
-    unique: Dict[str, List[str]] = {}
-    
+    unique: Dict[str, Tuple[List[str], int]] = {}
+    default_pr = max(_priority_map.values(), default=0) + 1
+
     for row in rows:
         url = row[0]
         p = urlparse(url)
-        
-        # Normalize the path by stripping any trailing slash
-        #stub = p.path.rstrip("/")
-        path = p.path.rstrip("/")
-        segments = [seg for seg in path.split("/") if seg]
-        stub = segments[-1] if segments else "/"
-        
-        # Look up this domain’s priority, defaulting to lowest if unknown
-        priority = _priority_map.get(p.netloc, len(_priority_map))
-        
-        if stub not in unique:
-            # First time we see this stub – keep it
-            unique[stub] = row
+        netloc = p.netloc.lower().split(":", 1)[0]
+        priority = _priority_map.get(netloc, default_pr)
+
+        # decode any %-encoding, strip trailing slash
+        path = unquote(p.path).rstrip("/")
+        if not path or path == "":
+            stub = "/"  # root index stub
         else:
-            # Compare against the existing winner for this stub
-            existing_url = unique[stub][0]
-            existing_p   = urlparse(existing_url)
-            existing_pr  = _priority_map.get(existing_p.netloc, len(_priority_map))
-            
-            # If this row’s domain outranks the existing one, replace it
-            if priority < existing_pr:
-                unique[stub] = row
-    
-    # Return only the chosen (deduped) rows
-    return list(unique.values())
+            # take final path segment, strip extension, lowercase
+            basename = os.path.basename(path)
+            name, _ext = os.path.splitext(basename)
+            stub = name.lower()
+
+        logger.debug(f"URL={url} → netloc={netloc}, pr={priority}, stub={stub!r}")
+
+        # if new stub, or this row has higher priority, keep it
+        existing = unique.get(stub)
+        if existing is None or priority < existing[1]:
+            unique[stub] = (row, priority)
+            logger.debug(f"  → keeping row for stub {stub!r} (pr={priority})")
+
+    deduped = [entry for entry, _ in unique.values()]
+    logger.info(f"dedupe_by_stub: {len(rows)} → {len(deduped)} unique stubs")
+    return deduped

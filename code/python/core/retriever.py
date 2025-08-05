@@ -780,6 +780,9 @@ class VectorDBClient:
             
             # Aggregate and deduplicate results
             final_results = self._aggregate_results(endpoint_results)
+
+            # Now collapse any URLs that share the same stub (keeping the higher-priority domain)
+            final_results = dedupe_by_stub(final_results)
             
             # Limit to requested number of results
             # Results are already in relevance order from aggregation
