@@ -691,7 +691,7 @@
     </Prompt>
   </Statistics>
 
-  <PromptSet itemType="MedicalOrganization">
+  <Place>
     <Prompt ref="RequiredInfoPrompt">
       <promptString>
         To find the right {itemType} for you on {request.site}, I need your suburb or postcode.
@@ -700,11 +700,10 @@
       <returnStruc>
         {
           "required_info_found": "True or False",
-          "user_question":       "Please tell me your suburb or postcode so I can find nearby services."
+          "user_question": "Please tell me your suburb or postcode so I can find nearby services."
         }
       </returnStruc>
     </Prompt>
-  </PromptSet>
-
+  </Place>  
 
 </root>

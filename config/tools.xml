@@ -6,20 +6,20 @@
   <Item>
     <Tool name="search" enabled="true">
       <method>builtin</method>
-      <example>Find Italian restaurants near me</example>
-      <example>Show me action movies from the 1990s</example>
-      <example>I need vegetarian pasta recipes</example>
-      <example>Find wireless headphones under $200</example>
+      <example>Find doctors near me</example>
+      <example>I need a medical clinic with a female doctor</example>
+      <example>How can I care for a sprained ankle</example>
+      <example>I need a service that caters for older males and mental health in rural Australia</example>
       <prompt>
         The user has the following query: {request.query}.
 
         The search tool finds items that match specific search criteria. It's designed for:
-        - Finding recipes/movies/books/products that match certain requirements
-        - Discovering items based on attributes like genre, cuisine type, price range, or features
+        - Finding services that match certain requirements
+        - Discovering items based on attributes like medical specialty, health advice, service or features
         - Broad exploration when users want to see what's available
         
         The search tool is NOT the best choice if the user is asking for specific details 
-        about a PARTICULAR named item (like ingredients, instructions, cast, price, etc.).
+        about a PARTICULAR named item (like opening times, instructions, accessibility, price, etc.).
         
         Assign a score from 0 to 100 for whether the search tool is appropriate.
         Also provide the search query that should be passed to the tool.
@@ -35,14 +35,14 @@
     <Tool name="details" enabled="true">
       <method>extension</method>
       <handler>methods.item_details.ItemDetailsHandler</handler>
-      <example>What are the ingredients in Chicken Alfredo?</example>
-      <example>Who directed The Dark Knight?</example>
+      <example>what are the opening times for this service?</example>
+      <example>where can I fin a hospital</example>
      
       <prompt>
         The user has the following query: {request.query}.
         
         The details tool gets specific information about a PARTICULAR named item and is best for:
-        - Getting ingredients, instructions, or other details about a SPECIFIC recipe/item
+        - Getting opening times, instructions, or other details about a SPECIFIC recipe/item
         - Getting the price, specifications, color, etc. for a specific product
         - Queries that mention a specific item name and ask for particular details about it.
         
