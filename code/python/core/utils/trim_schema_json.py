@@ -66,76 +66,77 @@ def trim_schema_json_list(schema_json, site):
 def trim_schema_json(schema_json, site):
     if schema_json is None:
         return None
+
     if isinstance(schema_json, list):
         return trim_schema_json_list(schema_json, site)
-    elif (isinstance(schema_json, dict) and "@graph" in schema_json):
+
+    elif isinstance(schema_json, dict) and "@graph" in schema_json:
         trimmed_items = trim_schema_json_list(schema_json["@graph"], site)
-        if (len(trimmed_items) > 0):
-            #schema_json["@graph"] = trimmed_items
-            return trimmed_items
-        else:   
-            return None
+        return trimmed_items if trimmed_items else None
+
     elif isinstance(schema_json, dict):
-        if (should_skip_item(site, schema_json)):
+        # 1) Skip whole items that don't belong
+        if should_skip_item(site, schema_json):
             return None
-        else:
-            retval = {}
 
-            # ←─── HERE: carry the raw openingHoursSpecification through ────→
+        retval = {}
+
+        # 2) Always keep these identifying fields
+        for core_key in ("@type", "@id", "url"):
+            if core_key in schema_json:
+                retval[core_key] = schema_json[core_key]
+
+        # 3) Carry raw openingHoursSpecification through
         if "openingHoursSpecification" in schema_json:
-
             retval["openingHoursSpecification"] = schema_json["openingHoursSpecification"]
-            # Rule 1: Skip properties in skip_properties
-            for k, v in schema_json.items():
-                if k in skip_properties:
-                    continue
-                
-                # Rule 2: If property is image and value is a list of URLs, pick the first value
-                if k == "image" and isinstance(v, list) and len(v) > 0:
-                    if all(isinstance(img, str) for img in v):
-                        retval[k] = v[0]
-                        continue
-                
-                # Rule 3: If property is image and value is an ImageObject, pick the URL
-                if k == "image" and isinstance(v, dict) and v.get("@type") == "ImageObject" and "url" in v:
-                    retval[k] = v["url"]
-                    continue
-                
-                # Rule 4: If value is a Person object, pick the name
-                if isinstance(v, dict) and v.get("@type") == "Person" and "name" in v:
-                    retval[k] = v["name"]
-                    continue
-                
-                # Rule 5: If value is aggregateRating, pick the ratingValue
-                if k == "aggregateRating" and isinstance(v, dict) and "ratingValue" in v:
-                    retval[k] = v["ratingValue"]
-                    continue
-                
-                # Rule 7: If property is review and value is a list, pick up to 3 longest reviewBodies
-                if k == "review" and isinstance(v, list):
-                    reviews = []
-                    review_bodies = [(r.get("reviewBody", ""), r) for r in v if isinstance(r, dict) and "reviewBody" in r]
-                    # Sort by length of reviewBody in descending order
-                    review_bodies.sort(key=lambda x: len(x[0]), reverse=True)
-                    # Take up to 3 longest reviews
-                    for _, review in review_bodies[:3]:
-                        reviews.append(review)
-                    if reviews:
-                        retval[k] = reviews
-                        continue
-                
-                # Default: keep the property as is
-                retval[k] = v
 
-            # --- flatten it into text for the LLM/UI ---
-            raw_oh = retval.get("openingHoursSpecification")
-            if raw_oh:
-                text = _format_opening_hours(raw_oh)
-                if text:
-                    retval["openingHoursText"] = text    
-            
-            # Return early since we've already processed all items
-            return retval
+        # 4) Now apply your per-property rules, but skip only what's in skip_properties
+        for k, v in schema_json.items():
+            if k in skip_properties or k in ("@type", "@id", "url", "openingHoursSpecification"):
+                continue
+
+            # your existing rules…
+            if k == "image" and isinstance(v, list) and v and all(isinstance(i, str) for i in v):
+                retval[k] = v[0]
+                continue
+
+            if k == "image" and isinstance(v, dict) and v.get("@type") == "ImageObject":
+                retval[k] = v.get("url")
+                continue
+
+            if isinstance(v, dict) and v.get("@type") == "Person" and "name" in v:
+                retval[k] = v["name"]
+                continue
+
+            if k == "aggregateRating" and isinstance(v, dict) and "ratingValue" in v:
+                retval[k] = v["ratingValue"]
+                continue
+
+            if k == "review" and isinstance(v, list):
+                # pick up to 3 longest reviewBody strings
+                bodies = [(r.get("reviewBody",""), r)
+                          for r in v if isinstance(r, dict) and "reviewBody" in r]
+                bodies.sort(key=lambda x: len(x[0]), reverse=True)
+                top3 = [r for (_, r) in bodies[:3]]
+                if top3:
+                    retval[k] = top3
+                    continue
+
+            # default: keep it as-is
+            retval[k] = v
+
+        # 5) Finally, flatten opening hours if present
+        raw_oh = retval.get("openingHoursSpecification")
+        if raw_oh:
+            text = _format_opening_hours(raw_oh)
+            if text:
+                retval["openingHoursText"] = text
+
+        return retval
+
+    # anything else (e.g. strings, numbers) we don't touch
+    return None
+
 
 def detect_encoding(file_path):
     """

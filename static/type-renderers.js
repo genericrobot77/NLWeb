@@ -107,28 +107,27 @@ export class PodcastEpisodeRenderer extends TypeRenderer {
  */
 export class MedicalOrganizationRenderer extends TypeRenderer {
   static get supportedTypes() {
-    return ["MedicalOrganization"];
+    return ["MedicalOrganization", "Place"];
   }
 
   render(item) {
-    // Base card
     const element = this.jsonRenderer.createDefaultItemHtml(item);
     const contentDiv = element.querySelector('.item-content');
     if (!contentDiv) return element;
 
-    // Extract schema node
     const nodes = Array.isArray(item.schema_object)
       ? item.schema_object
       : [item.schema_object].filter(Boolean);
-    const schema = nodes[0] || {};
+    const schema = nodes.find(n => n.address || n.location?.address) || nodes[0] || {};
 
-    // Read postcode
-    const postcode = schema.location?.address?.postalCode || schema.address?.postalCode;
+    const addr = schema.location?.address || schema.address || {};
+    const postcode = addr.postalCode || addr.postCode || addr.zipCode;
+    console.log("🏷️  postcode:", postcode, "from addr:", addr);
+
     if (postcode) {
-      // Append postcode
+      contentDiv.appendChild(document.createElement('br'));
       const span = this.jsonRenderer.makeAsSpan(`Postcode: ${postcode}`);
       span.classList.add('item-postcode');
-      contentDiv.appendChild(document.createElement('br'));
       contentDiv.appendChild(span);
     }
 

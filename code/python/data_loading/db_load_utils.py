@@ -24,29 +24,25 @@ EMBEDDING_SIZE = "small"
 
 #-- TEST MERGE GRAPH ------
 def merge_graph_nodes(graph):
-    """
-    Merge nodes in @graph that share the same @id or url.
-    Later nodes win on key conflicts, lists are concatenated uniquely.
-    """
     merged = {}
     for node in graph:
         node_id = node.get('@id') or node.get('url')
         if not node_id:
             continue
+
         if node_id not in merged:
-            merged[node_id] = node
+            # ensure @type is always a list
+            merged[node_id] = { **node, 
+                "@type": ([node["@type"]] if isinstance(node.get("@type"), str) else node.get("@type") or []) 
+            }
         else:
             for k, v in node.items():
-                # 1) special-case @type: merge into a deduped list
                 if k == "@type":
-                    existing = merged[node_id].get("@type")
-                    # normalize both sides to lists
-                    existing_list = existing if isinstance(existing, list) else [existing] if existing else []
-                    new_list      = v        if isinstance(v,        list) else [v]
-                    # merge + dedupe while preserving order
+                    # normalize both to lists and merge uniquely
+                    existing = merged[node_id].get("@type") or []
+                    existing_list = existing if isinstance(existing, list) else [existing]
+                    new_list = v if isinstance(v, list) else [v]
                     merged[node_id]["@type"] = list(dict.fromkeys(existing_list + new_list))
-
-                # 2) everything else follows your original logic
                 elif k not in merged[node_id]:
                     merged[node_id][k] = v
                 elif isinstance(v, list) and isinstance(merged[node_id][k], list):
@@ -57,6 +53,7 @@ def merge_graph_nodes(graph):
                     merged[node_id][k] = v
 
     return list(merged.values())
+
 
 # -- END TEST ---
 
