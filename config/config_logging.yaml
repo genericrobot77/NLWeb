@@ -93,6 +93,11 @@ logging:
       env_var: "WEBSERVER_LOG_LEVEL"
       default_level: ERROR
       log_file: "webserver.log"
+
+    retriever:
+      env_var: "RETRIEVER_LOG_LEVEL"
+      default_level: DEBUG
+      log_file: "retriever.log"
   
   # Global settings
   global:
