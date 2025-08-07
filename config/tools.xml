@@ -34,7 +34,11 @@
     </Tool>
 
     <Tool name="details" enabled="true">
-      …
+      <method>code</method>
+      <handler>methods.item_details.ItemDetailsHandler</handler>
+      <example>what are the opening times for Redfern Station Medical Clinico?</example>
+      <example>WHat are the doctors names at my local GP?</example>
+      
       <prompt>
         The user has the following query: {request.query}.
 
@@ -50,7 +54,13 @@
         Assign a score from 0 to 100 for whether the details tool is appropriate.  
         If the request is about opening times, ALWAYS use the `openingHoursText` property.
       </prompt>
-      …
+      <returnStruc>
+        {
+          "score": "integer between 0 and 100",
+          "item_name": "the name or identifier of the specific recipe for which details are being sought",
+          "details_requested": "the details that the user is asking for"
+        }
+      </returnStruc>
     </Tool>
 
 

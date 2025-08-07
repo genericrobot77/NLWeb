@@ -23,32 +23,44 @@ def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
     the lowest index in _priority_map—but only for URLs with exactly one
     path segment after the domain (and not matching our exclude prefix).
     All other rows are returned unchanged.
+
+    **New**: If the returned rows do *not* contain at least one
+    healthdirect.gov.au *and* one pregnancybirthbaby.org.au URL,
+    we skip all deduplication and return `rows` immediately.
     """
-    # Separate out rows we won’t touch
+    # --- 0) Quick domain check: bail if we don't need dedupe at all ---
+    netlocs = { urlparse(r[0]).netloc.lower() for r in rows }
+    has_hd  = any("healthdirect.gov.au"    in nl for nl in netlocs)
+    has_pbb = any("pregnancybirthbaby.org.au" in nl for nl in netlocs)
+    if not (has_hd and has_pbb):
+        logger.debug("Skipping dedupe_by_stub: need both HD and PBB domains, only found %r", netlocs)
+        return rows
+
+    # --- 1) Split into passthrough vs candidates for stub‐dedupe ---
     passthrough: List[List[str]] = []
-    to_dedupe: List[List[str]]   = []
+    to_dedupe:   List[List[str]] = []
 
     for row in rows:
         url = row[0]
-        # 1) Exclude our special prefix altogether
+
+        # Exclude our special prefix URLs entirely
         if EXCLUDE_PREFIX in url:
             logger.debug(f"Skipping (exclude prefix): {url}")
             passthrough.append(row)
             continue
 
         p = urlparse(url)
-        # get path segments after domain
         path = unquote(p.path).strip("/")
         segments = [seg for seg in path.split("/") if seg]
 
-        # 2) Only dedupe URLs with exactly one path segment
+        # Only dedupe single-segment paths
         if len(segments) == 1:
             to_dedupe.append(row)
         else:
             logger.debug(f"Skipping (multi‐segment): {url}")
             passthrough.append(row)
 
-    # Now perform the old stub‐based dedupe on just our selected rows
+    # --- 2) Perform stub dedupe on our selected rows ---
     unique: Dict[str, Tuple[List[str], int]] = {}
     default_pr = max(_priority_map.values(), default=0) + 1
 
@@ -58,7 +70,7 @@ def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
         netloc = p.netloc.lower().split(":", 1)[0]
         priority = _priority_map.get(netloc, default_pr)
 
-        # compute stub = final segment without extension
+        # stub = final path segment sans extension
         path = unquote(p.path).rstrip("/")
         basename = os.path.basename(path)
         name, _ext = os.path.splitext(basename)
@@ -73,7 +85,7 @@ def dedupe_by_stub(rows: List[List[str]]) -> List[List[str]]:
 
     deduped = [entry for entry, _ in unique.values()]
 
-    # Merge back passthrough rows
+    # --- 3) Merge back passthrough rows and return ---
     result = deduped + passthrough
     logger.info(f"dedupe_by_stub: {len(rows)} → {len(result)} rows (deduped {len(to_dedupe)} targets)")
     return result

@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Sites>
-  <Site name="imdb">
-    <itemType>Movie</itemType>
-    <itemType>Person</itemType>
-    <itemType>TVSeries</itemType>
-    <description>Internet Movie Database - comprehensive database of movies, TV shows, and entertainment industry professionals</description>
+  <Site name="Healthdirect">
+    <itemType>WebPage</itemType>
+    <itemType>FAQ</itemType>
+    <itemType>HealthTopicContent</itemType>
+    <description>Healthdirect Australia - Health realted information</description>
   </Site>
   
-  <Site name="seriouseats">
-    <itemType>Recipe</itemType>
-    <itemType>Article</itemType>
-    <itemType>HowToSection</itemType>
-    <description>Serious Eats - food and cooking website with recipes, techniques, and culinary science</description>
+  <Site name="Pregnancy-Birth-and-Baby">
+    <itemType>WebPage</itemType>
+    <itemType>HealthTopicContent</itemType>
+    <description>Pregnancy Birth and Baby - Pregnancy, Birth and Baby supports parents on the journey from pregnancy to preschool. Trusted information about pregnancy, birth and raising a child up to 5 years of age. </description>
   </Site>
 </Sites>
