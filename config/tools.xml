@@ -34,36 +34,25 @@
     </Tool>
 
     <Tool name="details" enabled="true">
-      <method>extension</method>
-      <handler>methods.item_details.ItemDetailsHandler</handler>
-      <example>What are the active ingredients in Panadol?</example>
-      <example>what is this drug used for specifically?</example>
-      <example>Is this drug on the Public Benefits Scheme?</example>
-      <example>What does this drug look like?</example>
+      …
       <prompt>
         The user has the following query: {request.query}.
-        
-        The details tool gets specific information about a PARTICULAR named item and is best for:
-        - Getting opening times, instructions, or other details about a SPECIFIC health service
-        - Getting the best advice for a described health complaint
-        - Queries that mention a specific item name and ask for details about it
-        
-        The details tool should score HIGH (80-100) if the user names a specific item and wants details.
-        The details tool should score LOW (0-30) if the user wants to find/search for items.
-        If the request is about opening times ALWAYS use the openingHoursText property of the schema object as the content to display in the search result. 
-        Return the details as a single string. Do not return a JSON structure.
 
-        Assign a score from 0 to 100 for whether the details tool is appropriate.
-        If the user is asking for details about a specific item, provide the item name and what details are being requested.
+        The details tool gets specific information about a PARTICULAR named item and is best for:
+          – Opening times, instructions, etc., about a SPECIFIC health service
+          – Advice for a described health complaint
+          – Queries that name an item and ask for details about it
+
+        **You MUST return `details` as a single, human-readable string.**  
+        **Do not return any JSON object or key/value structure.**  
+        If you have an `openingHoursText` property on the schema object, use *that* as your string content.
+
+        Assign a score from 0 to 100 for whether the details tool is appropriate.  
+        If the request is about opening times, ALWAYS use the `openingHoursText` property.
       </prompt>
-      <returnStruc>
-        {
-          "score": "integer between 0 and 100",
-          "item_name": "the name or identifier of the specific item for which details are being sought",
-          "details_requested": "string — a single, human-readable sentence or two, _not_ a JSON object"
-        }
-      </returnStruc>
+      …
     </Tool>
+
 
     <Tool name="compare" enabled="true">
       <method>extension</method>

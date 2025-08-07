@@ -814,13 +814,13 @@ class VectorDBClient:
                # Aggregate and deduplicate results
             final_results = self._aggregate_results(endpoint_results)
             # ── debug: what URLs do we have before stub-dedupe?
-            logger.debug("URLs before stub dedupe: %s", [row[0] for row in final_results])
+           #logger.debug("URLs before stub dedupe: %s", [row[0] for row in final_results])
 
             # Now collapse any URLs that share the same stub (keeping the higher-priority domain)
             final_results = dedupe_by_stub(final_results)
 
             # ── debug: what URLs remain after stub-dedupe?
-            logger.debug("URLs after stub dedupe: %s", [row[0] for row in final_results])
+            #logger.debug("URLs after stub dedupe: %s", [row[0] for row in final_results])
 
             # Limit to requested number of results
             final_results = final_results[:num_results]

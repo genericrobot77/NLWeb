@@ -139,32 +139,74 @@ export class PodcastEpisodeRenderer extends TypeRenderer {
 }
 
 /**
+ * Renderer for medical specialty pills
+ * Applies to Place and MedicalOrganization types
+ */
+export class SpecialtyPillRenderer extends TypeRenderer {
+  static get supportedTypes() {
+    return ["Place", "MedicalOrganization"];
+  }
+
+  render(item) {
+    // Build base card with default details
+    const element = this.jsonRenderer.createDefaultItemHtml(item);
+    const contentDiv = element.querySelector('.item-content');
+    if (!contentDiv) return element;
+
+    // Extract schema object (handle array or single)
+    const schema = Array.isArray(item.schema_object)
+      ? item.schema_object[0]
+      : item.schema_object || {};
+
+    // Get only the medicalSpecialty names
+    const names = Array.isArray(schema.medicalSpecialty)
+      ? schema.medicalSpecialty.map(s => s.name).filter(Boolean)
+      : [];
+
+    if (names.length) {
+      const bar = document.createElement('div');
+      bar.classList.add('pill-bar');
+
+      names.forEach(name => {
+        const pill = document.createElement('span');
+        pill.classList.add('pill', 'pill-specialty');
+        pill.textContent = name;
+        bar.appendChild(pill);
+      });
+
+      // Insert pill bar directly below the description
+      const desc = element.querySelector('.item-explanation')
+                   || element.querySelector('.item-description');
+      if (desc) desc.after(bar);
+      else contentDiv.prepend(bar);
+    }
+
+    return element;
+  }
+}
+
+/**
  * Factory for creating type renderers
  */
 export class TypeRendererFactory {
   /**
    * Registers all type renderers with a JSON renderer
-   * 
-   * @param {JsonRenderer} jsonRenderer - The JSON renderer to register with
    */
   static registerAll(jsonRenderer) {
     TypeRendererFactory.registerRenderer(RealEstateRenderer, jsonRenderer);
     TypeRendererFactory.registerRenderer(PodcastEpisodeRenderer, jsonRenderer);
+    TypeRendererFactory.registerRenderer(SpecialtyPillRenderer, jsonRenderer);
     // RecipeRenderer will be registered separately
     // Add more renderers here as needed
   }
   
   /**
    * Registers a specific renderer with a JSON renderer
-   * 
-   * @param {Function} RendererClass - The renderer class
-   * @param {JsonRenderer} jsonRenderer - The JSON renderer to register with
    */
   static registerRenderer(RendererClass, jsonRenderer) {
     const renderer = new RendererClass(jsonRenderer);
-    
     RendererClass.supportedTypes.forEach(type => {
-      jsonRenderer.registerTypeRenderer(type, (item) => renderer.render(item));
+      jsonRenderer.registerTypeRenderer(type, item => renderer.render(item));
     });
   }
 }
