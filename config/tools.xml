@@ -6,20 +6,21 @@
   <Item>
     <Tool name="search" enabled="true">
       <method>builtin</method>
-      <example>Find Italian restaurants near me</example>
-      <example>Show me action movies from the 1990s</example>
-      <example>I need vegetarian pasta recipes</example>
-      <example>Find wireless headphones under $200</example>
+      <example>Find doctors near me</example>caesar
+      <example>Is it safe to drink alcohol when pregnant</example>
+      <example>I need a medical clinic with a female doctor</example>
+      <example>How can I care for a sprained ankle</example>
+      <example>I need a service that caters for older males and mental health in rural Australia</example>
       <prompt>
         The user has the following query: {request.query}.
 
         The search tool finds items that match specific search criteria. It's designed for:
-        - Finding recipes/movies/books/products that match certain requirements
-        - Discovering items based on attributes like genre, cuisine type, price range, or features
+        - Finding services that match certain requirements
+        - Discovering items based on attributes like medical specialty, health advice, service or features
         - Broad exploration when users want to see what's available
         
         The search tool is NOT the best choice if the user is asking for specific details 
-        about a PARTICULAR named item (like ingredients, instructions, cast, price, etc.).
+        about a PARTICULAR named item (like opening times, instructions, accessibility, price, etc.).
         
         Assign a score from 0 to 100 for whether the search tool is appropriate.
         Also provide the search query that should be passed to the tool.
@@ -43,13 +44,15 @@
         The user has the following query: {request.query}.
         
         The details tool gets specific information about a PARTICULAR named item and is best for:
-        - Getting ingredients, instructions, or other details about a SPECIFIC drug
-        - Getting the shape, specifications, color, etc. for a specific product
+        - Getting opening times, instructions, or other details about a SPECIFIC health service
+        - Getting the best advice for a described health complaint
         - Queries that mention a specific item name and ask for details about it
         
         The details tool should score HIGH (80-100) if the user names a specific item and wants details.
         The details tool should score LOW (0-30) if the user wants to find/search for items.
-        
+        If the request is about opening times ALWAYS use the openingHoursText property of the schema object as the content to display in the search result. 
+        Return the details as a single string. Do not return a JSON structure.
+
         Assign a score from 0 to 100 for whether the details tool is appropriate.
         If the user is asking for details about a specific item, provide the item name and what details are being requested.
       </prompt>
@@ -57,7 +60,7 @@
         {
           "score": "integer between 0 and 100",
           "item_name": "the name or identifier of the specific item for which details are being sought",
-          "details_requested": "the details that the user is asking for"
+          "details_requested": "string — a single, human-readable sentence or two, _not_ a JSON object"
         }
       </returnStruc>
     </Tool>

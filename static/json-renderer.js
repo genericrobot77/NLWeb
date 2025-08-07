@@ -105,7 +105,7 @@ export class JsonRenderer {
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');
       const headerCell = document.createElement('th');
-      headerCell.textContent = 'Ingredients';
+      headerCell.textContent = 'List';
       headerCell.style.cssText = 'text-align: left; padding: 10px; background-color: #f0f0f0; border: 1px solid #ddd; font-weight: 600;';
       headerRow.appendChild(headerCell);
       thead.appendChild(headerRow);
