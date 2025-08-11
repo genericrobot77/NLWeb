@@ -21,6 +21,43 @@ EMBEDDINGS_PATH_SMALL = "./data/embeddings/small/"
 EMBEDDINGS_PATH_LARGE = "./data/embeddings/large/"
 EMBEDDING_SIZE = "small"
 
+
+
+#-- TEST MERGE GRAPH ------
+def merge_graph_nodes(graph):
+    merged = {}
+    for node in graph:
+        node_id = node.get('@id') or node.get('url')
+        if not node_id:
+            continue
+
+        if node_id not in merged:
+            # ensure @type is always a list
+            merged[node_id] = { **node, 
+                "@type": ([node["@type"]] if isinstance(node.get("@type"), str) else node.get("@type") or []) 
+            }
+        else:
+            for k, v in node.items():
+                if k == "@type":
+                    # normalize both to lists and merge uniquely
+                    existing = merged[node_id].get("@type") or []
+                    existing_list = existing if isinstance(existing, list) else [existing]
+                    new_list = v if isinstance(v, list) else [v]
+                    merged[node_id]["@type"] = list(dict.fromkeys(existing_list + new_list))
+                elif k not in merged[node_id]:
+                    merged[node_id][k] = v
+                elif isinstance(v, list) and isinstance(merged[node_id][k], list):
+                    merged[node_id][k] += [x for x in v if x not in merged[node_id][k]]
+                elif isinstance(v, dict) and isinstance(merged[node_id][k], dict):
+                    merged[node_id][k].update(v)
+                else:
+                    merged[node_id][k] = v
+
+    return list(merged.values())
+
+
+# -- END TEST ---
+
 # ---------- File and JSON Processing Functions ----------
 
 async def read_file_lines(file_path: str) -> List[str]:
