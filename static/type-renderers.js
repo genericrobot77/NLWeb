@@ -142,48 +142,69 @@ export class PodcastEpisodeRenderer extends TypeRenderer {
  * Renderer for medical specialty pills
  * Applies to Place and MedicalOrganization types
  */
+
 export class SpecialtyPillRenderer extends TypeRenderer {
   static get supportedTypes() {
     return ["Place", "MedicalOrganization"];
   }
 
   render(item) {
-    // Build base card with default details
+    // Build base card
     const element = this.jsonRenderer.createDefaultItemHtml(item);
-    const contentDiv = element.querySelector('.item-content');
+    const contentDiv = element.querySelector(".item-content");
     if (!contentDiv) return element;
 
-    // Extract schema object (handle array or single)
-    const schema = Array.isArray(item.schema_object)
-      ? item.schema_object[0]
-      : item.schema_object || {};
+    // Normalize schema nodes (array or single)
+    const nodes = Array.isArray(item.schema_object)
+      ? item.schema_object.filter(Boolean)
+      : item.schema_object
+        ? [item.schema_object]
+        : [];
 
-    // Get only the medicalSpecialty names
-    const names = Array.isArray(schema.medicalSpecialty)
-      ? schema.medicalSpecialty.map(s => s.name).filter(Boolean)
-      : [];
+    // Extract medical specialty names from all nodes, tolerate multiple shapes
+    const names = Array.from(new Set(
+      nodes.flatMap(n => {
+        const raw = n?.medicalSpecialty;
+        if (!raw) return [];
+        // medicalSpecialty can be:
+        //  - [{ "@type": "MedicalSpecialty", "name": "X" }, ...]
+        //  - "X"
+        //  - ["X","Y"]
+        //  - { "@type": "MedicalSpecialty", "name": "X" }
+        if (Array.isArray(raw)) {
+          return raw.map(x => (typeof x === "string" ? x : x?.name)).filter(Boolean);
+        }
+        if (typeof raw === "string") return [raw];
+        if (typeof raw === "object" && raw !== null) return raw.name ? [raw.name] : [];
+        return [];
+      })
+    ));
 
-    if (names.length) {
-      const bar = document.createElement('div');
-      bar.classList.add('pill-bar');
+    if (names.length === 0) return element;
 
-      names.forEach(name => {
-        const pill = document.createElement('span');
-        pill.classList.add('pill', 'pill-specialty');
-        pill.textContent = name;
-        bar.appendChild(pill);
-      });
+    // Create pill bar
+    const bar = document.createElement("div");
+    bar.classList.add("pill-bar", "pill-bar-specialties");
 
-      // Insert pill bar directly below the description
-      const desc = element.querySelector('.item-explanation')
-                   || element.querySelector('.item-description');
-      if (desc) desc.after(bar);
-      else contentDiv.prepend(bar);
-    }
+    names.forEach(name => {
+      const pill = document.createElement("span");
+      pill.classList.add("pill", "pill-specialty");
+      pill.textContent = name;
+      pill.setAttribute("aria-label", `Medical specialty: ${name}`);
+      bar.appendChild(pill);
+    });
+
+    // Insert below explanation/description if present, else at top of content
+    const anchor =
+      element.querySelector(".item-explanation") ||
+      element.querySelector(".item-description");
+    if (anchor) anchor.after(bar);
+    else contentDiv.prepend(bar);
 
     return element;
   }
 }
+
 
 /**
  * Factory for creating type renderers
@@ -200,13 +221,25 @@ export class TypeRendererFactory {
     // Add more renderers here as needed
   }
   
-  /**
-   * Registers a specific renderer with a JSON renderer
-   */
   static registerRenderer(RendererClass, jsonRenderer) {
-    const renderer = new RendererClass(jsonRenderer);
-    RendererClass.supportedTypes.forEach(type => {
-      jsonRenderer.registerTypeRenderer(type, item => renderer.render(item));
-    });
+  // Resolve supported types whether defined as a getter or a method
+  const types = typeof RendererClass.supportedTypes === "function"
+    ? RendererClass.supportedTypes()
+    : RendererClass.supportedTypes;
+
+  // Instance-based renderer function
+  const instance = new RendererClass(jsonRenderer);
+  const fn = (item) => instance.render(item);
+
+  // Try “per-type callback” signature first; fall back to “class + types”
+  try {
+    // If method supports (type, fn), this will succeed for the first type
+    // We'll register all types this way.
+    types.forEach(t => jsonRenderer.registerTypeRenderer(t, fn));
+  } catch {
+    // Old API: (RendererClass, typesArray)
+    jsonRenderer.registerTypeRenderer(RendererClass, types);
   }
+}
+
 }
