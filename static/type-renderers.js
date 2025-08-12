@@ -205,6 +205,39 @@ export class SpecialtyPillRenderer extends TypeRenderer {
   }
 }
 
+/**
+ * Renderer for MedicalOrganization, adding postcode display
+ */
+export class MedicalOrganizationRenderer extends TypeRenderer {
+  static get supportedTypes() {
+    return ["MedicalOrganization", "Place"];
+  }
+
+  render(item) {
+    const element = this.jsonRenderer.createDefaultItemHtml(item);
+    const contentDiv = element.querySelector('.item-content');
+    if (!contentDiv) return element;
+
+    const nodes = Array.isArray(item.schema_object)
+      ? item.schema_object
+      : [item.schema_object].filter(Boolean);
+    const schema = nodes.find(n => n.address || n.location?.address) || nodes[0] || {};
+
+    const addr = schema.location?.address || schema.address || {};
+    const postcode = addr.postalCode || addr.postCode || addr.zipCode;
+    console.log("🏷️  postcode:", postcode, "from addr:", addr);
+
+    if (postcode) {
+      contentDiv.appendChild(document.createElement('br'));
+      const span = this.jsonRenderer.makeAsSpan(`Postcode: ${postcode}`);
+      span.classList.add('item-postcode');
+      contentDiv.appendChild(span);
+    }
+
+    return element;
+  }
+}
+
 
 /**
  * Factory for creating type renderers
@@ -217,6 +250,9 @@ export class TypeRendererFactory {
     TypeRendererFactory.registerRenderer(RealEstateRenderer, jsonRenderer);
     TypeRendererFactory.registerRenderer(PodcastEpisodeRenderer, jsonRenderer);
     TypeRendererFactory.registerRenderer(SpecialtyPillRenderer, jsonRenderer);
+    TypeRendererFactory.registerRenderer(MedicalOrganizationRenderer, jsonRenderer);
+    
+    
     // RecipeRenderer will be registered separately
     // Add more renderers here as needed
   }
