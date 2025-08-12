@@ -91,7 +91,11 @@ def _merge_lists(a: List[Any], b: List[Any]) -> List[Any]:
             tp = item.get("@type")
             tp = ",".join(tp) if isinstance(tp, list) else str(tp or "")
             return ("name_type", nm + "|" + tp)
-        return ("scalar", repr(item))
+        try:
+            return ("scalar", str(item))
+        except Exception:
+            return ("scalar", repr(item))
+
 
     out: List[Any] = []
     idx: Dict[tuple, int] = {}
@@ -197,7 +201,11 @@ def prepare_documents_from_json(url: str, json_data: str, site: str) -> Tuple[Li
 
         for obj in merged_objects:
             item_url = obj.get("@id") or obj.get("url") or url
-            item_json = json.dumps(obj, ensure_ascii=False)
+            item_json = json.dumps({
+                "@context": "https://schema.org",
+                **obj
+            }, ensure_ascii=False)
+
 
             doc = {
                 "id": str(int64_hash(item_url)),

@@ -1,5 +1,8 @@
 import json
 import chardet
+import copy
+from typing import Any, Dict, List, Optional, Union
+
 
 # the schema.org markup on many pages includes a lot of information that is not useful
 # for indexing or ranking. Further, many pages are just collections that we don't 
@@ -8,6 +11,101 @@ import chardet
 skip_types = []
 
 skip_properties = []
+
+def flatten_graph_to_single_object(
+    schema_json: Dict[str, Any],
+    prefer_types: Optional[List[str]] = None,
+    ensure_primary_type: Optional[str] = "MedicalOrganization"
+) -> Optional[Dict[str, Any]]:
+    """
+    Takes a JSON-LD with @graph and returns ONE inlined object.
+    - Chooses a primary node (preferring prefer_types).
+    - Inlines referenced nodes via @id/url in shallow properties (e.g., location/address).
+    - Normalizes common fields for schema.org validity.
+    """
+    graph = schema_json.get("@graph")
+    if not isinstance(graph, list) or not graph:
+        return None
+
+    def _ensure_list(x):
+        if x is None:
+            return []
+        return x if isinstance(x, list) else [x]
+
+    def _index_by_id(graph):
+        by_id = {}
+        for n in graph:
+            node_id = n.get("@id") or n.get("url")
+            if node_id:
+                by_id[node_id] = n
+        return by_id
+
+    def _inline_node(value, by_id):
+        if isinstance(value, list):
+            return [_inline_node(v, by_id) for v in value]
+        if isinstance(value, dict):
+            v_id = value.get("@id")
+            if v_id and v_id in by_id:
+                merged = copy.deepcopy(value)
+                ref = by_id[v_id]
+                for k, v in ref.items():
+                    if k not in merged:
+                        merged[k] = v
+                return merged
+            return {k: _inline_node(v, by_id) for k, v in value.items()}
+        if isinstance(value, str) and value in by_id:
+            return by_id[value]
+        return value
+
+    # Pick primary node (MedicalOrganization preferred)
+    def _select_primary_node(graph):
+        for n in graph:
+            if "MedicalOrganization" in _ensure_list(n.get("@type")):
+                return n
+        return graph[0]
+
+    primary = _select_primary_node(graph)
+    if primary is None:
+        return None
+
+    by_id = _index_by_id(graph)
+    primary_obj = copy.deepcopy(primary)
+
+    for k, v in list(primary_obj.items()):
+        primary_obj[k] = _inline_node(v, by_id)
+
+    # Ensure @type list and include primary type if not already there
+    types = _ensure_list(primary_obj.get("@type"))
+    if ensure_primary_type and ensure_primary_type not in types:
+        types.insert(0, ensure_primary_type)
+    primary_obj["@type"] = types
+
+    # Normalize ContactPoint
+    if "ContactPoint" in primary_obj and "contactPoint" not in primary_obj:
+        primary_obj["contactPoint"] = primary_obj.pop("ContactPoint")
+
+    # Normalize openingHours
+    if "openingHoursSpecification" in primary_obj:
+        for spec in _ensure_list(primary_obj["openingHoursSpecification"]):
+            if isinstance(spec, dict):
+                spec["@type"] = "OpeningHoursSpecification"
+
+    # Convert `provider` → `employee`, ignore @id-only references
+    if "provider" in primary_obj:
+        providers = _ensure_list(primary_obj["provider"])
+        employees = [
+            p for p in providers
+            if isinstance(p, dict) and p.get("@type") == "Person"
+        ]
+        if employees:
+            primary_obj["employee"] = employees
+        # Always remove the original field to avoid schema.org validation errors
+        del primary_obj["provider"]
+        print("Converted provider → employee:", primary_obj.get("employee"))
+
+
+    return primary_obj
+
 
 def should_skip_item(site, item):
     if item is None:
