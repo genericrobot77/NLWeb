@@ -14,7 +14,7 @@ endpoints:
     api_endpoint_env: OPENAI_ENDPOINT
     llm_type: openai
     models:
-      high: gpt-4.1
+      high: gpt-4o-mini
       low: gpt-4.1-mini
 
   anthropic:
