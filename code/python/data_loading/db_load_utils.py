@@ -25,6 +25,85 @@ EMBEDDING_SIZE = "small"
 
 # ---------- File and JSON helpers ----------
 
+# --- Minimal, local helpers (keep NLWeb intact) ---
+
+def _ensure_list(x):
+    if x is None:
+        return []
+    return x if isinstance(x, list) else [x]
+
+def _is_organization_type(types) -> bool:
+    """
+    True if @type contains Organization or a subclass, e.g. MedicalOrganization.
+    """
+    for t in _ensure_list(types):
+        if isinstance(t, str) and (t == "Organization" or t.endswith("Organization")):
+            return True
+    return False
+
+def _provider_to_employee_inplace(n: dict) -> bool:
+    """
+    Convert 'provider' Person entries -> 'employee' array.
+    - Removes id-only provider stubs: { "@id": "..." }
+    - De-duplicates employees by (@id, name).
+    - Drops 'provider' field to avoid schema.org warnings on Organization types.
+    Returns True if any change was made.
+    """
+    prov = n.get("provider") if "provider" in n else n.get("Provider")
+    if prov is None:
+        return False
+
+    items = prov if isinstance(prov, list) else [prov]
+    people = []
+    for p in items:
+        if not isinstance(p, dict):
+            continue
+        # skip id-only refs
+        if set(p.keys()) == {"@id"}:
+            continue
+        ptype = p.get("@type")
+        if ptype == "Person" or (isinstance(ptype, list) and "Person" in ptype):
+            people.append(p)
+
+    if people:
+        existing = n.get("employee", [])
+        if not isinstance(existing, list):
+            existing = [existing]
+
+        def key(person: dict):
+            return ((person.get("@id") or "").lower(), (person.get("name") or "").lower())
+
+        seen = {key(e) for e in existing if isinstance(e, dict)}
+        for person in people:
+            k = key(person)
+            if k not in seen:
+                existing.append(person)
+                seen.add(k)
+        n["employee"] = existing
+
+    # drop provider fields (both casings)
+    n.pop("provider", None)
+    n.pop("Provider", None)
+    return bool(people)
+
+def _normalize_common_fields(n: dict) -> None:
+    """
+    Tiny safe normalisations across types.
+    """
+    # ContactPoint -> contactPoint
+    if "ContactPoint" in n and "contactPoint" not in n:
+        n["contactPoint"] = n.pop("ContactPoint")
+
+    # Ensure OpeningHoursSpecification has @type
+    ohs = n.get("openingHoursSpecification")
+    if ohs:
+        ohs_list = ohs if isinstance(ohs, list) else [ohs]
+        for spec in ohs_list:
+            if isinstance(spec, dict) and "@type" not in spec:
+                spec["@type"] = "OpeningHoursSpecification"
+        n["openingHoursSpecification"] = ohs_list
+
+
 async def read_file_lines(file_path: str) -> List[str]:
     encodings = ['utf-8', 'latin-1', 'utf-16']
     for encoding in encodings:
@@ -200,6 +279,13 @@ def prepare_documents_from_json(url: str, json_data: str, site: str) -> Tuple[Li
         texts: List[str] = []
 
         for obj in merged_objects:
+            # light, type-agnostic cleanup
+            _normalize_common_fields(obj)
+
+            # Organization-only: provider -> employee
+            if _is_organization_type(obj.get("@type")):
+                _provider_to_employee_inplace(obj)
+
             item_url = obj.get("@id") or obj.get("url") or url
             item_json = json.dumps({
                 "@context": "https://schema.org",
@@ -245,13 +331,17 @@ def documents_from_csv_line(line: str, site: str) -> List[Dict[str, Any]]:
 
     documents: List[Dict[str, Any]] = []
     for obj in merged_objects:
-        item_url = obj.get("@id") or obj.get("url") or url  # <-- no #i suffix anymore
+        _normalize_common_fields(obj)
+        if _is_organization_type(obj.get("@type")):
+            _provider_to_employee_inplace(obj)
+
+        item_url = obj.get("@id") or obj.get("url") or url
         name = get_item_name(obj)
 
         doc = {
             "id": str(int64_hash(item_url)),
             "embedding": embedding,
-            "schema_json": json.dumps(obj, ensure_ascii=False),
+            "schema_json": json.dumps({"@context": "https://schema.org", **obj}, ensure_ascii=False),
             "url": item_url,
             "name": name or "Unnamed Item",
             "site": site or "unknown"
